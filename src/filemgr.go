@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -14,6 +15,31 @@ import (
 //TODO: move to settings.json file.
 var copyFiles = []string{"server.properties", "permissions.json", "whitelist.json"}
 var copyDirs = []string{"worlds"}
+
+// Credit to var23rav: https://gist.github.com/var23rav/23ae5d0d4d830aff886c3c970b8f6c6b
+func moveFile(sourcePath, destPath string) error {
+	inputFile, err := os.Open(sourcePath)
+	if err != nil {
+		return fmt.Errorf("Couldn't open source file: %s", err)
+	}
+	outputFile, err := os.Create(destPath)
+	if err != nil {
+		inputFile.Close()
+		return fmt.Errorf("Couldn't open dest file: %s", err)
+	}
+	defer outputFile.Close()
+	_, err = io.Copy(outputFile, inputFile)
+	inputFile.Close()
+	if err != nil {
+		return fmt.Errorf("Writing to output file failed: %s", err)
+	}
+	// The copy was successful, so now delete the original file
+	err = os.Remove(sourcePath)
+	if err != nil {
+		return fmt.Errorf("Failed removing original file: %s", err)
+	}
+	return nil
+}
 
 func getServer(url string) []byte {
 	//"https://minecraft.azureedge.net/bin-win/bedrock-server-1.17.41.01.zip"
@@ -39,15 +65,14 @@ func getServer(url string) []byte {
 	return bytes
 }
 
-func unzip(data []byte, path string) {
-	os.WriteFile("../server.zip", data, 0644)
+func unzip(data []byte, spath string) {
+	os.WriteFile(dataPath("/server.zip"), data, 0644)
 
 	color.Green("Downloaded successfully! \nExtracting ZIP archive. ")
 
-	archiver.Unarchive("../server.zip", path)
+	archiver.Unarchive(dataPath("/server.zip"), spath)
 
-	os.Remove("../server.zip")
-
+	os.Remove(dataPath("/server.zip"))
 }
 
 func moveServer(serverPath string, destPath string) {
@@ -60,7 +85,7 @@ func moveServer(serverPath string, destPath string) {
 
 	for _, file := range files {
 		if !file.IsDir() && contains(copyFiles, file.Name()) {
-			err := os.Rename(serverPath+"/"+file.Name(), destPath+"/"+file.Name())
+			err := moveFile(serverPath+"/"+file.Name(), destPath+"/"+file.Name())
 			check(err)
 			fmt.Printf("Copied file %s to %s\n", file.Name(), destPath+"/"+file.Name())
 		} else if file.IsDir() && contains(copyDirs, file.Name()) {
