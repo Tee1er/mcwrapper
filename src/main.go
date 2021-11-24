@@ -103,10 +103,7 @@ cmdloop:
 			fmt.Print("\033[H\033[2J") // Should work
 
 		case "settings":
-			kvp := getStrKeyValues(settings)
-			for k, v := range kvp {
-				fmt.Printf("%s: %s\n", k, v)
-			}
+			prettyPrintStruct(settings)
 
 		case "stop":
 			stopServer(&serverIO)
