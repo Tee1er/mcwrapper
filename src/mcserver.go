@@ -17,7 +17,7 @@ type serverWrapper struct {
 
 func startServer(result *serverWrapper) {
 	color.Yellow("Starting server.")
-	mcServer := exec.Command("../server/bedrock_server.exe")
+	mcServer := exec.Command(dataPath("/server/bedrock_server.exe"))
 
 	stdout, _ := mcServer.StdoutPipe()
 	stdin, _ := mcServer.StdinPipe()
