@@ -24,31 +24,34 @@ func (s *Settings) Load(fname string) {
 }
 
 var (
-	serverIO serverWrapper
-	wh       = Webhook{}
-	settings Settings
+	serverIO        serverWrapper
+	wh              = Webhook{}
+	settings        Settings
+	defaultSettings = Settings{
+		WebhookUrl: "",
+	}
 
-	exepath_str, _ = os.Executable()
-	basedir        = path.Join(path.Base(exepath_str), "../")
-	data_dir       = path.Join(basedir, "/data/")
-	settings_path  = path.Join(data_dir, "/settings.json")
-	tmpdir, _      = os.MkdirTemp("", "mcwrapper_tmp")
+	exepathStr, _ = os.Executable()
+	basedir       = path.Join(path.Base(exepathStr), "../")
+	dataDir       = path.Join(basedir, "/data/")
+	settingsPath  = path.Join(dataDir, "/settings.json")
+	tmpDir, _     = os.MkdirTemp("", "mcwrapper_tmp")
 )
-
-const def_settings = "{\n\t\"webhook_url\": \"\"\n}"
 
 func main() {
 	c := color.New(color.FgCyan, color.Bold)
 	c.Println("-- MCWrapper v0.1-alpha CLI -- \n")
 
-	os.MkdirAll(data_dir, 0664)
+	os.MkdirAll(dataDir, 0664)
 	os.MkdirAll(dataPath("/server"), 0664)
 
-	if _, err := os.Stat(settings_path); os.IsNotExist(err) {
-		os.WriteFile(settings_path, []byte(def_settings), 0664)
+	if _, err := os.Stat(settingsPath); os.IsNotExist(err) {
+		// MarshalIndent for pretty-print
+		defSettingsStr, _ := json.MarshalIndent(defaultSettings, "", "\t")
+		os.WriteFile(settingsPath, []byte(defSettingsStr), 0664)
 	}
 
-	settings.Load(settings_path)
+	settings.Load(settingsPath)
 
 	// Connect the webhook
 	if settings.WebhookEnabled {
@@ -65,6 +68,7 @@ cmdloop:
 			data := getServer(url)
 			getServer(url)
 			unzip(data, dataPath("/server"))
+
 		case "update":
 			url := getUrl("Enter URL for server download: ")
 			data := getServer(url)
@@ -83,6 +87,7 @@ cmdloop:
 
 			moveServer(tmpdatadir, dataPath("/server"))
 			os.RemoveAll(tmpdatadir)
+
 		case "help":
 			fmt.Println("\tCOMMANDS:\n")
 
@@ -90,16 +95,29 @@ cmdloop:
 			fmt.Println("\tupdate\tDownloads, extracts, and updates the server to the latest version. Preserves worlds and some other config files.")
 			fmt.Println("\trun\tRuns the server.")
 			fmt.Println("\texit\tExits the program.")
+
 		case "run":
 			go startServer(&serverIO)
+
+		case "clear":
+			fmt.Print("\033[H\033[2J") // Should work
+
+		case "settings":
+			kvp := getStrKeyValues(settings)
+			for k, v := range kvp {
+				fmt.Printf("%s: %s\n", k, v)
+			}
+
 		case "stop":
 			stopServer(&serverIO)
+
 		case "exit":
 			break cmdloop
+
 		default:
 			fmt.Println("\tInvalid command. Type 'help' for a list of commands.")
 		}
 	}
 
-	os.RemoveAll(tmpdir)
+	os.RemoveAll(tmpDir)
 }

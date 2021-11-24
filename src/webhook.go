@@ -60,8 +60,8 @@ func (wh *Webhook) Connect(url string) {
 }
 
 func (wh *Webhook) SendRaw(data string) {
-	api_url := fmt.Sprintf("https://discord.com/api/webhooks/%s/%s", wh.Id, wh.Token)
-	req, _ := http.NewRequest("POST", api_url, bytes.NewBuffer([]byte(data)))
+	apiUrl := fmt.Sprintf("https://discord.com/api/webhooks/%s/%s", wh.Id, wh.Token)
+	req, _ := http.NewRequest("POST", apiUrl, bytes.NewBuffer([]byte(data)))
 	req.Header.Set("Content-Type", "application/json")
 	_, err := http.DefaultClient.Do(req)
 
@@ -72,18 +72,18 @@ func (wh *Webhook) SendRaw(data string) {
 }
 
 func (wh *Webhook) Send(message string) {
-	msg_json := fmt.Sprintf(`{
+	msgJson := fmt.Sprintf(`{
 		"content": "%s"
 	}`, message)
 
-	wh.SendRaw(msg_json)
+	wh.SendRaw(msgJson)
 }
 
 func (wh *Webhook) SendEmbed(embed []Embed) {
 	data, _ := json.Marshal(embed)
-	msg_json := fmt.Sprintf(`{
+	msgJson := fmt.Sprintf(`{
 		"embeds": [%s]
 	}`, string(data))
 
-	wh.SendRaw(msg_json)
+	wh.SendRaw(msgJson)
 }

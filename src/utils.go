@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -15,7 +16,7 @@ import (
 func check(err error) {
 	if err != nil {
 		// Do cleanup
-		os.RemoveAll(tmpdir)
+		os.RemoveAll(tmpDir)
 		panic(err)
 	}
 }
@@ -51,11 +52,31 @@ func getUrl(prompt string) string {
 }
 
 func dataPath(p string) string {
-	return path.Join(data_dir, p)
+	return path.Join(dataDir, p)
 }
 
 func tmpPath(p string) string {
-	resolved := path.Join(tmpdir, p)
+	resolved := path.Join(tmpDir, p)
 	os.MkdirAll(resolved, 0666)
 	return resolved
+}
+
+/// Returns a string:string map of struct field names and stringified values
+/// Strings are surrounded in quotation marks
+func getStrKeyValues(s interface{}) map[string]string {
+	m := make(map[string]string)
+	rt := reflect.TypeOf(settings)
+	rv := reflect.ValueOf(settings)
+
+	for fi := 0; fi < rt.NumField(); fi++ {
+		ft := rt.Field(fi)
+		fv := rv.FieldByName(ft.Name)
+		if ft.Type.Kind() == reflect.String {
+			m[ft.Name] = fmt.Sprintf("\"%v\"", fv)
+		} else {
+			m[ft.Name] = fmt.Sprintf("%v", fv)
+		}
+	}
+
+	return m
 }
