@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path"
+	"syscall"
 
 	"github.com/fatih/color"
 )
@@ -24,7 +26,7 @@ func (s *Settings) Load(fname string) {
 }
 
 var (
-	serverIO        serverWrapper
+	serverIO        ServerWrapper
 	wh              = Webhook{}
 	settings        Settings
 	defaultSettings = Settings{
@@ -57,6 +59,17 @@ func main() {
 	if settings.WebhookEnabled {
 		wh.Connect(settings.WebhookUrl)
 	}
+
+	// Handle signals (Ctrl-C)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-signalChan
+		sig.String()         // So the variable is unused, sigh
+		os.RemoveAll(tmpDir) // Cleanup, no temp file left behind
+		os.Exit(0)
+	}()
 
 cmdloop:
 	for {

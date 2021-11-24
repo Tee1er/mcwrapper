@@ -5,26 +5,34 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"runtime"
 
 	"github.com/fatih/color"
 )
 
-type serverWrapper struct {
+type ServerWrapper struct {
 	cmd    *exec.Cmd
 	stdin  *io.WriteCloser
 	stdout *io.ReadCloser
 }
 
-func startServer(result *serverWrapper) {
+func startServer(result *ServerWrapper) {
 	color.Yellow("Starting server.")
-	mcServer := exec.Command(dataPath("/server/bedrock_server.exe"))
+
+	var mcServer *exec.Cmd
+	if runtime.GOOS == "windows" {
+		mcServer = exec.Command(dataPath("/server/bedrock_server.exe"))
+	} else {
+		mcServer = exec.Command(dataPath("/server/bedrock_server"))
+	}
 
 	stdout, _ := mcServer.StdoutPipe()
 	stdin, _ := mcServer.StdinPipe()
 
 	mcServer.Start()
 	color.Blue("Server started.")
-	*result = serverWrapper{
+	*result = ServerWrapper{
+		cmd:    mcServer,
 		stdin:  &stdin,
 		stdout: &stdout,
 	}
@@ -36,7 +44,7 @@ func startServer(result *serverWrapper) {
 
 }
 
-func stopServer(serverIO *serverWrapper) {
+func stopServer(serverIO *ServerWrapper) {
 	color.Red("Stopping server.")
 	writer := bufio.NewWriter(*serverIO.stdin)
 	writer.WriteString("stop\n")
