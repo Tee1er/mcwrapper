@@ -34,8 +34,8 @@ var (
 	}
 
 	exepathStr, _ = os.Executable()
-	basedir       = path.Join(path.Base(exepathStr), "../")
-	dataDir       = path.Join(basedir, "/data/")
+	baseDir       = path.Join(path.Base(exepathStr), "../")
+	dataDir       = path.Join(baseDir, "/data/")
 	settingsPath  = path.Join(dataDir, "/settings.json")
 	tmpDir, _     = os.MkdirTemp("", "mcwrapper_tmp")
 )
