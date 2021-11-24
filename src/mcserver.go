@@ -23,7 +23,9 @@ func startServer(result *ServerWrapper) {
 	if runtime.GOOS == "windows" {
 		mcServer = exec.Command(dataPath("/server/bedrock_server.exe"))
 	} else {
-		mcServer = exec.Command(dataPath("/server/bedrock_server"))
+		mcServer = exec.Command(
+			fmt.Sprintf("LD_LIBRARY_PATH=%s %s", dataPath("/server/bedrock_server"), dataPath("/server/bedrock_server")),
+		)
 	}
 
 	stdout, _ := mcServer.StdoutPipe()
