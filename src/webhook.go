@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type User struct {
@@ -38,15 +39,64 @@ type Webhook struct {
 	Application_id string `json:"application_id"`
 	Source_guild   string `json:"source_guild"`
 	Source_channel string `json:"source_channel"`
-	Url            string `json:"url"`
+	URL            string `json:"url"`
 }
+
+type Icon struct {
+	IconURL      string `json:"icon_url"`
+	ProxyIconURL string `json:"proxy_icon_url"`
+}
+
+type EmbedFooter struct {
+	Text string `json:"text"`
+	Icon
+}
+
+type EmbedField struct {
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Inline bool   `json:"inline"`
+}
+
+type EmbedProvider struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+type EmbedAuthor struct {
+	EmbedProvider
+	Icon
+}
+
+// Video, thumbnail and image have the same JSON schema
+type EmbedImage struct {
+	URL      string `json:"url"`
+	ProxyURL string `json:"proxy_url"`
+	Height   int    `json:"height"`
+	Width    int    `json:"width"`
+}
+type EmbedVideo EmbedImage
+type EmbedThumbnail EmbedImage
 
 // TODO
 type Embed struct {
+	Title       string         `json:"title"`
+	Type        string         `json:"type"`
+	Description string         `json:"description"`
+	URL         string         `json:"url"`
+	Timestamp   time.Time      `json:"timestamp"`
+	Color       int            `json:"color"`
+	Footer      EmbedFooter    `json:"footer"`
+	Image       EmbedImage     `json:"image"`
+	Thumbnail   EmbedThumbnail `json:"thumbnail"`
+	Video       EmbedVideo     `json:"video"`
+	Provider    EmbedProvider  `json:"provider"`
+	Author      EmbedAuthor    `json:"author"`
+	Fields      []EmbedField   `json:"fields"`
 }
 
 func (wh *Webhook) Connect(url string) {
-	wh.Url = url
+	wh.URL = url
 	res, err := http.Get(url)
 	defer res.Body.Close()
 	if err != nil {

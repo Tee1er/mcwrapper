@@ -8,6 +8,7 @@ import (
 	"path"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/fatih/color"
@@ -91,7 +92,7 @@ func getKeyValuePairs(s interface{}) map[string]reflect.Value {
 }
 
 func prettyPrintStruct(s interface{}) {
-	kvp := getKeyValuePairs(settings)
+	kvp := getKeyValuePairs(s)
 	for k, v := range kvp {
 		val := ""
 		switch v.Type().Kind() {
@@ -108,5 +109,31 @@ func prettyPrintStruct(s interface{}) {
 			val = color.CyanString(fmt.Sprintf("%v", v))
 		}
 		fmt.Printf("\t%s%s %s\n", color.RedString(k), ":", val)
+	}
+}
+
+// Pretty-Prints a string[string] map n alphabetical order, colorized
+func prettyPrintMap(s map[string]string) {
+	keysAlpha := make([]string, len(s))
+	i := 0
+	// Collate keys and sort them
+	for k, _ := range s {
+		keysAlpha[i] = k
+		i++
+	}
+	sort.Strings(keysAlpha)
+
+	for _, k := range keysAlpha {
+		vStr := fmt.Sprintf("%v", s[k])
+		if vStr == "" {
+			vStr = `""`
+		}
+
+		fmt.Printf(
+			"\t%s%s %s\n",
+			color.RedString(fmt.Sprintf("%v", k)),
+			":",
+			color.GreenString(vStr),
+		)
 	}
 }

@@ -119,7 +119,16 @@ cmdloop:
 			fmt.Print("\033[H\033[2J") // Should work
 
 		case "settings":
+			fmt.Println("\nMcWrapper settings:")
 			prettyPrintStruct(settings)
+
+			props, err := parseProperties(dataPath("/server/server.properties"))
+			if err != nil {
+				color.HiRed("Error: %s", err.Error())
+			} else {
+				fmt.Println("\nServer properties:")
+				prettyPrintMap(props)
+			}
 
 		case "stop":
 			serverIO.Stop()
