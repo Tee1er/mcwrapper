@@ -14,12 +14,18 @@ import (
 	"github.com/fatih/color"
 )
 
+// Not-So-Nicely display an error
 func check(err error) {
 	if err != nil {
 		// Do cleanup
 		os.RemoveAll(tmpDir)
 		panic(err)
 	}
+}
+
+// Nicely display an error
+func printErr(err error) {
+	color.HiRed("Error: %s", err.Error())
 }
 
 func contains(slice []string, element string) bool {

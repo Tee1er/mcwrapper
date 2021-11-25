@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -41,16 +42,18 @@ func moveFile(sourcePath, destPath string) error {
 	return nil
 }
 
-func getServer(url string) []byte {
+func getServer(url string) ([]byte, error) {
 	//"https://minecraft.azureedge.net/bin-win/bedrock-server-1.17.41.01.zip"
 	// Latest ZIP file for server release ... unsure how to get the latest version since version numbers are not always in order. Could ask user for version #.
 	// Alternatively, could use GH to get the latest version
 	resp, err := http.Get(url)
-
-	check(err)
+	defer resp.Body.Close()
+	if err != nil {
+		return nil, errors.New("HTTP request failed")
+	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		panic("HTTP error " + string(resp.StatusCode))
+		return nil, fmt.Errorf("HTTP error: %s", string(resp.StatusCode))
 	}
 
 	// Store the response in a file, so that archiver can unzip it.
@@ -59,20 +62,14 @@ func getServer(url string) []byte {
 	bytes, err := ioutil.ReadAll(resp.Body)
 
 	check(err)
-
-	resp.Body.Close()
-
-	return bytes
+	return bytes, nil
 }
 
 func unzip(data []byte, spath string) {
-	os.WriteFile(dataPath("/server.zip"), data, 0644)
-
+	os.WriteFile(tmpPath("/server.zip"), data, 0644)
 	color.Green("Downloaded successfully! \nExtracting ZIP archive. ")
-
-	archiver.Unarchive(dataPath("/server.zip"), spath)
-
-	os.Remove(dataPath("/server.zip"))
+	archiver.Unarchive(tmpPath("/server.zip"), spath)
+	os.Remove(tmpPath("/server.zip"))
 }
 
 func moveServer(serverPath string, destPath string) {

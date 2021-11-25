@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,7 +19,15 @@ type ServerWrapper struct {
 	stdout     *bufio.Reader
 }
 
-func (sw *ServerWrapper) Start() {
+func (sw *ServerWrapper) IsRunning() bool {
+	return sw.cmd != nil && sw.cmd.ProcessState.ExitCode() == -1
+}
+
+func (sw *ServerWrapper) Start() error {
+	if sw.IsRunning() {
+		return errors.New("cannot start server, it is already running")
+	}
+
 	color.Yellow("Starting server.")
 
 	sw.serverpath = dataPath("/server")
@@ -46,17 +55,19 @@ func (sw *ServerWrapper) Start() {
 
 	sw.cmd.Start()
 	color.Blue("Server started.")
+
+	return nil
 }
 
 func (sw *ServerWrapper) Stop() {
-	color.Red("Stopping server.")
-	if sw.stdin != nil {
+	if sw.IsRunning() {
+		color.Red("Stopping server.")
 		sw.Send("stop")
 		//sw.cmd.Process.Kill()
 	}
 }
 
 func (sw *ServerWrapper) Send(cmd string) {
-	sw.stdin.WriteString("stop\n")
+	sw.stdin.WriteString(cmd + "\n")
 	sw.stdin.Flush()
 }

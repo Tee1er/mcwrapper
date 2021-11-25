@@ -2,9 +2,13 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 //var valuesRegex = regexp.MustCompile(`(?gim)^(?!( |\t)*(#.*)).*$`)
@@ -34,4 +38,28 @@ func parseProperties(filepath string) (map[string]string, error) {
 	}
 
 	return props, nil
+}
+
+func setProperty(propfile string, propname string, propval string) error {
+	fileContents, err := ioutil.ReadFile(propfile)
+	if os.IsNotExist(err) {
+		return errors.New("properties file not found, do you have the dedicated server set up?")
+	}
+
+	propertiesStr := string(fileContents)
+
+	propRegexp := regexp.MustCompile(fmt.Sprintf(`(?m)^%s=.*$`, propname))
+	if propRegexp.MatchString(propertiesStr) {
+		propertiesStr = propRegexp.ReplaceAllString(propertiesStr, fmt.Sprintf("%s=%s", propname, propval))
+		color.Green("Set server property '%s' to '%s'. These changes will be reflected when you next restart the server", propname, propval)
+	} else {
+		return fmt.Errorf("could not find specified property \"%s\"", propname)
+	}
+
+	err = os.WriteFile(propfile, []byte(propertiesStr), 0664)
+	if err != nil {
+		return fmt.Errorf("error writing modified properties to file '%s'", propfile)
+	}
+
+	return nil
 }

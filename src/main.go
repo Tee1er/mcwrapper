@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"strings"
 	"syscall"
 
 	"github.com/fatih/color"
@@ -41,9 +42,6 @@ var (
 )
 
 func main() {
-	c := color.New(color.FgCyan, color.Bold)
-	c.Println("-- MCWrapper v0.1-alpha CLI -- \n")
-
 	os.MkdirAll(dataDir, 0664)
 	os.MkdirAll(dataPath("/server"), 0664)
 
@@ -75,17 +73,27 @@ func main() {
 cmdloop:
 	for {
 		input := getInput("> ")
+		inputs := strings.Split(input, " ")
+		args := inputs[1:]
 
-		switch input {
+		switch inputs[0] {
 		case "init":
 			url := getUrl("Enter URL for server download: ")
-			data := getServer(url)
+			data, err := getServer(url)
+			if err != nil {
+				printErr(err)
+				continue
+			}
 			getServer(url)
 			unzip(data, dataPath("/server"))
 
 		case "update":
 			url := getUrl("Enter URL for server download: ")
-			data := getServer(url)
+			data, err := getServer(url)
+			if err != nil {
+				printErr(err)
+				continue
+			}
 			tmpdatadir := tmpPath("data_backup")
 
 			fmt.Println("Moving data to temporary dir.")
@@ -119,15 +127,35 @@ cmdloop:
 			fmt.Print("\033[H\033[2J") // Should work
 
 		case "settings":
-			fmt.Println("\nMcWrapper settings:")
-			prettyPrintStruct(settings)
-
 			props, err := parseProperties(dataPath("/server/server.properties"))
 			if err != nil {
-				color.HiRed("Error: %s", err.Error())
-			} else {
+				printErr(err)
+				continue
+			}
+
+			switch len(args) {
+			case 0:
+				fmt.Println("\nMcWrapper settings:")
+				prettyPrintStruct(settings)
+
 				fmt.Println("\nServer properties:")
 				prettyPrintMap(props)
+
+			case 1:
+				if val, contains := props[args[0]]; contains {
+					fmt.Printf("\nServer property '%s' is '%s'\n", args[0], val)
+				} else {
+					color.HiRed("Error, property '%s' not found in server.properties", args[0])
+				}
+
+			case 2:
+				err = setProperty(dataPath("/server/server.properties"), args[0], args[1])
+				if err != nil {
+					printErr(err)
+				}
+
+			default:
+				color.HiRed("Error, invalid arguments for 'settings'")
 			}
 
 		case "stop":

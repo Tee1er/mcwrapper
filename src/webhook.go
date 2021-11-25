@@ -30,7 +30,7 @@ type User struct {
 type Webhook struct {
 	Id             string `json:"id"`
 	Wh_type        int    `json:"type"`
-	Guild_id       string `json:"type"`
+	Guild_id       string `json:"guild_id"`
 	Chanel_id      string `json:"channel_id"`
 	UserData       User   `json:"user"`
 	Name           string `json:"name"`
@@ -98,10 +98,10 @@ type Embed struct {
 func (wh *Webhook) Connect(url string) {
 	wh.URL = url
 	res, err := http.Get(url)
-	defer res.Body.Close()
 	if err != nil {
 		fmt.Print("Error connecting to webhook")
 	}
+	defer res.Body.Close()
 
 	body, _ := ioutil.ReadAll(res.Body)
 	fmt.Printf("Body: %s\n", string(body))
