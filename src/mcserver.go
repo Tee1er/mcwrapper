@@ -3,51 +3,60 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
+	"os"
 	"os/exec"
+	"path"
 	"runtime"
 
 	"github.com/fatih/color"
 )
 
 type ServerWrapper struct {
-	cmd    *exec.Cmd
-	stdin  *io.WriteCloser
-	stdout *io.ReadCloser
+	serverpath string
+	cmd        *exec.Cmd
+	stdin      *bufio.Writer
+	stdout     *bufio.Reader
 }
 
-func startServer(result *ServerWrapper) {
+func (sw *ServerWrapper) Start() {
 	color.Yellow("Starting server.")
 
-	var mcServer *exec.Cmd
+	sw.serverpath = dataPath("/server")
 	if runtime.GOOS == "windows" {
-		mcServer = exec.Command(dataPath("/server/bedrock_server.exe"))
+		sw.cmd = exec.Command(path.Join(sw.serverpath, "/bedrock_server.exe"))
+	} else if runtime.GOOS == "linux" {
+		fmt.Printf("%s\n", path.Join(sw.serverpath, "/bedrock_server"))
+		sw.cmd = exec.Command("./bedrock_server")
+		sw.cmd.Env = append(make([]string, 0), "LD_LIBRARY_PATH=.")
 	} else {
-		mcServer = exec.Command(
-			fmt.Sprintf("LD_LIBRARY_PATH=%s %s", dataPath("/server/bedrock_server"), dataPath("/server/bedrock_server")),
-		)
+		color.Red("Error, your system doesn't appear to support the minecraft bedrock dedicated server.")
 	}
 
-	stdout, _ := mcServer.StdoutPipe()
-	stdin, _ := mcServer.StdinPipe()
+	// Set CWD to inside server data dir
+	sw.cmd.Dir = sw.serverpath
 
-	mcServer.Start()
+	// Get pipes and make r/w IO for them
+	stdout, _ := sw.cmd.StdoutPipe()
+	stdin, _ := sw.cmd.StdinPipe()
+	sw.stdout = bufio.NewReader(stdout)
+	sw.stdin = bufio.NewWriter(stdin)
+
+	// Hook server stdout to go's stdout
+	sw.cmd.Stdout = os.Stdout
+
+	sw.cmd.Start()
 	color.Blue("Server started.")
-	*result = ServerWrapper{
-		cmd:    mcServer,
-		stdin:  &stdin,
-		stdout: &stdout,
-	}
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-		m := scanner.Text()
-		fmt.Println(m)
-	}
-
 }
 
-func stopServer(serverIO *ServerWrapper) {
+func (sw *ServerWrapper) Stop() {
 	color.Red("Stopping server.")
-	writer := bufio.NewWriter(*serverIO.stdin)
-	writer.WriteString("stop\n")
+	if sw.stdin != nil {
+		sw.Send("stop")
+		//sw.cmd.Process.Kill()
+	}
+}
+
+func (sw *ServerWrapper) Send(cmd string) {
+	sw.stdin.WriteString("stop\n")
+	sw.stdin.Flush()
 }

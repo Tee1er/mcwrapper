@@ -68,6 +68,7 @@ func main() {
 		sig := <-signalChan
 		sig.String()         // So the variable is unused, sigh
 		os.RemoveAll(tmpDir) // Cleanup, no temp file left behind
+		serverIO.Stop()
 		os.Exit(0)
 	}()
 
@@ -107,10 +108,12 @@ cmdloop:
 			fmt.Println("\tinit\tDownloads and extracts the latest server version.")
 			fmt.Println("\tupdate\tDownloads, extracts, and updates the server to the latest version. Preserves worlds and some other config files.")
 			fmt.Println("\trun\tRuns the server.")
+			fmt.Println("\tclear\tClears the console.")
+			fmt.Println("\tsettings\tPrints the currently loaded settings (from data/settings.json).")
 			fmt.Println("\texit\tExits the program.")
 
 		case "run":
-			go startServer(&serverIO)
+			serverIO.Start()
 
 		case "clear":
 			fmt.Print("\033[H\033[2J") // Should work
@@ -119,9 +122,10 @@ cmdloop:
 			prettyPrintStruct(settings)
 
 		case "stop":
-			stopServer(&serverIO)
+			serverIO.Stop()
 
 		case "exit":
+			serverIO.Stop()
 			break cmdloop
 
 		default:
