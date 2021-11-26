@@ -1,43 +1,114 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"os/signal"
+	"path"
+	"strings"
+	"syscall"
 
 	"github.com/fatih/color"
 )
 
-var serverIO serverWrapper
+type Settings struct {
+	WebhookUrl     string `json:"webhook_url`
+	WebhookEnabled bool
+}
+
+func (s *Settings) Load(fname string) {
+	file, err := ioutil.ReadFile(fname)
+	check(err)
+
+	json.Unmarshal(file, s)
+	s.WebhookEnabled = s.WebhookUrl != ""
+}
+
+var (
+	serverIO        ServerWrapper
+	wh              = Webhook{}
+	settings        Settings
+	defaultSettings = Settings{
+		WebhookUrl: "",
+	}
+
+	exepathStr, _ = os.Executable()
+	baseDir       = path.Join(path.Base(exepathStr), "../")
+	dataDir       = path.Join(baseDir, "/data/")
+	settingsPath  = path.Join(dataDir, "/settings.json")
+	tmpDir, _     = os.MkdirTemp("", "mcwrapper_tmp")
+)
 
 func main() {
-	c := color.New(color.FgCyan, color.Bold)
-	c.Println("-- MCWrapper v0.1-alpha CLI -- \n")
+	os.MkdirAll(dataDir, 0664)
+	os.MkdirAll(dataPath("/server"), 0664)
+
+	if _, err := os.Stat(settingsPath); os.IsNotExist(err) {
+		// MarshalIndent for pretty-print
+		defSettingsStr, _ := json.MarshalIndent(defaultSettings, "", "\t")
+		os.WriteFile(settingsPath, []byte(defSettingsStr), 0664)
+	}
+
+	settings.Load(settingsPath)
+
+	// Connect the webhook
+	if settings.WebhookEnabled {
+		wh.Connect(settings.WebhookUrl)
+	}
+
+	// Handle signals (Ctrl-C)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-signalChan
+		sig.String()         // So the variable is unused, sigh
+		os.RemoveAll(tmpDir) // Cleanup, no temp file left behind
+		serverIO.Stop()
+		os.Exit(0)
+	}()
+
+cmdloop:
 	for {
 		input := getInput("> ")
+		inputs := strings.Split(input, " ")
+		args := inputs[1:]
 
-		switch input {
+		switch inputs[0] {
 		case "init":
 			url := getUrl("Enter URL for server download: ")
-			data := getServer(url)
+			data, err := getServer(url)
+			if err != nil {
+				printErr(err)
+				continue
+			}
 			getServer(url)
-			unzip(data, "../server")
+			unzip(data, dataPath("/server"))
+
 		case "update":
 			url := getUrl("Enter URL for server download: ")
-			data := getServer(url)
+			data, err := getServer(url)
+			if err != nil {
+				printErr(err)
+				continue
+			}
+			tmpdatadir := tmpPath("data_backup")
 
 			fmt.Println("Moving data to temporary dir.")
 
-			moveServer("../server", "../temp")
-			os.RemoveAll("../server")
+			moveServer(dataPath("/server"), tmpdatadir)
+			os.RemoveAll(dataPath("/server"))
 
 			fmt.Println("Extracting new server files.")
 
-			unzip(data, "../server")
+			unzip(data, dataPath("/server"))
 
 			fmt.Println("Moving data back.")
 
-			moveServer("../temp", "../server")
-			os.RemoveAll("../temp")
+			moveServer(tmpdatadir, dataPath("/server"))
+			os.RemoveAll(tmpdatadir)
 
 		case "help":
 			fmt.Println("\tCOMMANDS:\n")
@@ -45,15 +116,59 @@ func main() {
 			fmt.Println("\tinit\tDownloads and extracts the latest server version.")
 			fmt.Println("\tupdate\tDownloads, extracts, and updates the server to the latest version. Preserves worlds and some other config files.")
 			fmt.Println("\trun\tRuns the server.")
+			fmt.Println("\tclear\tClears the console.")
+			fmt.Println("\tsettings\tPrints the currently loaded settings (from data/settings.json).")
 			fmt.Println("\texit\tExits the program.")
+
 		case "run":
-			go startServer(&serverIO)
+			serverIO.Start()
+
+		case "clear":
+			fmt.Print("\033[H\033[2J") // Should work
+
+		case "settings":
+			props, err := parseProperties(dataPath("/server/server.properties"))
+			if err != nil {
+				printErr(err)
+				continue
+			}
+
+			switch len(args) {
+			case 0:
+				fmt.Println("\nMcWrapper settings:")
+				prettyPrintStruct(settings)
+
+				fmt.Println("\nServer properties:")
+				prettyPrintMap(props)
+
+			case 1:
+				if val, contains := props[args[0]]; contains {
+					fmt.Printf("\nServer property '%s' is '%s'\n", args[0], val)
+				} else {
+					color.HiRed("Error, property '%s' not found in server.properties", args[0])
+				}
+
+			case 2:
+				err = setProperty(dataPath("/server/server.properties"), args[0], args[1])
+				if err != nil {
+					printErr(err)
+				}
+
+			default:
+				color.HiRed("Error, invalid arguments for 'settings'")
+			}
+
 		case "stop":
-			stopServer(&serverIO)
+			serverIO.Stop()
+
 		case "exit":
-			os.Exit(0)
+			serverIO.Stop()
+			break cmdloop
+
 		default:
 			fmt.Println("\tInvalid command. Type 'help' for a list of commands.")
 		}
 	}
+
+	os.RemoveAll(tmpDir)
 }
