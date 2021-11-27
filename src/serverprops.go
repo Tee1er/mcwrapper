@@ -25,7 +25,7 @@ func parseProperties(filepath string) (map[string]string, error) {
 	propertiesValues := strings.Split(propertiesStr, "\n") //valuesRegex.FindAllString(propertiesStr, -1)
 
 	for _, prop := range propertiesValues {
-		if !strings.HasPrefix(strings.Trim(prop, " \t"), "#") && prop != "" {
+		if !strings.HasPrefix(strings.TrimSpace(prop), "#") && prop != "" {
 			split := strings.Split(prop, "=")
 			val := ""
 
