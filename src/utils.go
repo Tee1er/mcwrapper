@@ -129,7 +129,7 @@ func prettyPrintMap(s map[string]string) {
 	keysAlpha := make([]string, len(s))
 	i := 0
 	// Collate keys and sort them
-	for k, _ := range s {
+	for k := range s {
 		keysAlpha[i] = k
 		i++
 	}
@@ -150,7 +150,7 @@ func prettyPrintMap(s map[string]string) {
 	}
 }
 
-func relayIf(in io.Reader, out io.Writer, cond *bool, exit chan bool) {
+func relayIf(in io.Reader, out io.Writer, cond *bool, exit chan bool, alternate io.Writer) {
 	reader := bufio.NewReader(in)
 	for {
 		if len(exit) != 0 {
@@ -162,6 +162,11 @@ func relayIf(in io.Reader, out io.Writer, cond *bool, exit chan bool) {
 			out.Write(data)
 			if !noeol {
 				out.Write([]byte("\n"))
+			}
+		} else if alternate != nil {
+			alternate.Write(data)
+			if !noeol {
+				alternate.Write([]byte("\n"))
 			}
 		}
 	}

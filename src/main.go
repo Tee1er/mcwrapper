@@ -101,6 +101,10 @@ func handleCommand(cmdHistory []string, input string) bool {
 
 		mcServer.pipeStdout = true
 		mcServer.pipeStdin = true
+		if mcServer.overflow.Len() != 0 {
+			fmt.Print(mcServer.overflow.String())
+			mcServer.overflow.Reset()
+		}
 
 		for {
 			rawInp := getInput("")
@@ -116,7 +120,10 @@ func handleCommand(cmdHistory []string, input string) bool {
 		mcServer.pipeStdin = false
 
 	case "run":
-		mcServer.Start()
+		err := mcServer.Start()
+		if err != nil {
+			color.Yellow(err.Error())
+		}
 
 	case "clear":
 		fmt.Print("\033[H\033[2J") // Should work

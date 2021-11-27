@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path"
 	"runtime"
+	"strings"
 
 	"github.com/fatih/color"
 )
@@ -18,6 +19,7 @@ type ServerWrapper struct {
 	stdout     *bufio.Reader
 	pipeStdout bool
 	pipeStdin  bool
+	overflow   strings.Builder
 }
 
 func (sw *ServerWrapper) IsRunning() bool {
@@ -26,10 +28,10 @@ func (sw *ServerWrapper) IsRunning() bool {
 
 func (sw *ServerWrapper) Start() error {
 	if sw.IsRunning() {
-		return errors.New("cannot start server, it is already running")
+		return errors.New("Cannot start server, it is already running")
 	}
 
-	color.Yellow("Starting server.")
+	color.Blue("Starting server.")
 
 	sw.serverpath = dataPath("/server")
 	if runtime.GOOS == "windows" {
@@ -53,11 +55,11 @@ func (sw *ServerWrapper) Start() error {
 	sw.pipeStdin = false
 	sw.pipeStdout = false
 
-	go relayIf(sw.stdout, os.Stdout, &sw.pipeStdout, nil)
+	go relayIf(sw.stdout, os.Stdout, &sw.pipeStdout, nil, &sw.overflow)
 	//go relayWhile(os.Stdin, sw.stdin, &sw.pipeStdin)
 
 	sw.cmd.Start()
-	color.Blue("Server started.")
+	color.Green("Server started.")
 
 	return nil
 }
@@ -69,6 +71,7 @@ func (sw *ServerWrapper) Stop() {
 		sw.pipeStdin = false
 		sw.Send("stop")
 		//sw.cmd.Process.Kill()
+		sw.cmd = nil
 	}
 }
 
