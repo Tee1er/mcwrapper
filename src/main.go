@@ -11,7 +11,6 @@ import (
 	"syscall"
 
 	"github.com/fatih/color"
-	"github.com/jroimartin/gocui"
 )
 
 type Settings struct {
@@ -45,21 +44,6 @@ var (
 func handleSignal(sig os.Signal) {
 	os.RemoveAll(tmpDir) // Cleanup, no temp file left behind
 	mcServer.Stop()
-}
-
-func layoutGui(g *gocui.Gui) error {
-	extentX, extentY := g.Size()
-
-	if v, err := g.SetView("Server", extentX/2, 0, extentX, extentY); err == nil {
-		v.BgColor = gocui.ColorGreen
-		fmt.Fprintln(v, "Hello??")
-	}
-
-	return nil
-}
-
-func gocuiQuit(g *gocui.Gui, v *gocui.View) error {
-	return gocui.ErrQuit
 }
 
 func handleCommand(cmdHistory []string, input string) bool {
@@ -207,12 +191,6 @@ func main() {
 		handleSignal(sig)
 		os.Exit(0)
 	}()
-
-	// g, err := gocui.NewGui(gocui.Output256)
-	// check(err)
-
-	// g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, gocuiQuit)
-	// g.SetManagerFunc(layoutGui)
 
 	cmdHistory := make([]string, 20)
 	for {
