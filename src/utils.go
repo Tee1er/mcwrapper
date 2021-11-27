@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path"
@@ -141,5 +142,37 @@ func prettyPrintMap(s map[string]string) {
 			":",
 			color.GreenString(vStr),
 		)
+	}
+}
+
+func relayIf(in io.Reader, out io.Writer, cond *bool, exit chan bool) {
+	reader := bufio.NewReader(in)
+	for {
+		if len(exit) != 0 {
+			return
+		}
+
+		data, noeol, _ := reader.ReadLine()
+		if *cond {
+			out.Write(data)
+			if !noeol {
+				out.Write([]byte("\n"))
+			}
+		}
+	}
+}
+
+func relayWhile(in io.Reader, out io.Writer, cond *bool) {
+	reader := bufio.NewReader(in)
+	for {
+		data, noeol, _ := reader.ReadLine()
+		if *cond {
+			out.Write(data)
+			if !noeol {
+				out.Write([]byte("\n"))
+			}
+		} else {
+			return
+		}
 	}
 }

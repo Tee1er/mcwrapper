@@ -117,8 +117,12 @@ cmdloop:
 			fmt.Println("\tupdate\tDownloads, extracts, and updates the server to the latest version. Preserves worlds and some other config files.")
 			fmt.Println("\trun\tRuns the server.")
 			fmt.Println("\tclear\tClears the console.")
+			fmt.Println("\tserver\tEnters into another sub-console, with input passed directly to the dedicated server.")
 			fmt.Println("\tsettings\tPrints the currently loaded settings (from data/settings.json).")
 			fmt.Println("\texit\tExits the program.")
+
+		case "server":
+			// TODO
 
 		case "run":
 			serverIO.Start()
