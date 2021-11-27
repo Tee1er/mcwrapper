@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -17,6 +16,8 @@ type ServerWrapper struct {
 	cmd        *exec.Cmd
 	stdin      *bufio.Writer
 	stdout     *bufio.Reader
+	pipeStdout bool
+	pipeStdin  bool
 }
 
 func (sw *ServerWrapper) IsRunning() bool {
@@ -34,7 +35,6 @@ func (sw *ServerWrapper) Start() error {
 	if runtime.GOOS == "windows" {
 		sw.cmd = exec.Command(path.Join(sw.serverpath, "/bedrock_server.exe"))
 	} else if runtime.GOOS == "linux" {
-		fmt.Printf("%s\n", path.Join(sw.serverpath, "/bedrock_server"))
 		sw.cmd = exec.Command("./bedrock_server")
 		sw.cmd.Env = append(make([]string, 0), "LD_LIBRARY_PATH=.")
 	} else {
@@ -50,8 +50,11 @@ func (sw *ServerWrapper) Start() error {
 	sw.stdout = bufio.NewReader(stdout)
 	sw.stdin = bufio.NewWriter(stdin)
 
-	// Hook server stdout to go's stdout
-	sw.cmd.Stdout = os.Stdout
+	sw.pipeStdin = false
+	sw.pipeStdout = false
+
+	go relayIf(sw.stdout, os.Stdout, &sw.pipeStdout, nil)
+	//go relayWhile(os.Stdin, sw.stdin, &sw.pipeStdin)
 
 	sw.cmd.Start()
 	color.Blue("Server started.")
@@ -62,6 +65,8 @@ func (sw *ServerWrapper) Start() error {
 func (sw *ServerWrapper) Stop() {
 	if sw.IsRunning() {
 		color.Red("Stopping server.")
+		sw.pipeStdout = false
+		sw.pipeStdin = false
 		sw.Send("stop")
 		//sw.cmd.Process.Kill()
 	}
