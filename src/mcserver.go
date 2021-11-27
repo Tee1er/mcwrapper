@@ -51,7 +51,7 @@ func (sw *ServerWrapper) Start() error {
 	sw.stdin = bufio.NewWriter(stdin)
 
 	sw.pipeStdin = false
-	sw.pipeStdout = true
+	sw.pipeStdout = false
 
 	go relayIf(sw.stdout, os.Stdout, &sw.pipeStdout, nil)
 	//go relayWhile(os.Stdin, sw.stdin, &sw.pipeStdin)

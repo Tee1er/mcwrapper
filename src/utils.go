@@ -38,11 +38,16 @@ func contains(slice []string, element string) bool {
 	return false
 }
 
+// Global stdin reader instance, ensured to be non-nil
+var inputReader = bufio.NewReader(os.Stdin)
+
+// A tee-ed copy of inputReader, that can be assigned to the server's stdin
+var miscReader = io.TeeReader(inputReader, os.Stdin)
+
 func getInput(prompt string) string {
-	reader := bufio.NewReader(os.Stdin)
 	fmt.Print(prompt)
-	input, _ := reader.ReadString('\n')
-	return strings.Replace(strings.Replace(input, "\n", "", -1), "\r", "", -1)
+	input, _ := inputReader.ReadString('\n')
+	return strings.Trim(input, "\n\r")
 }
 
 var matchCtrlChars = regexp.MustCompile("\x1B(?:[@-Z\\-_]|\\[[0-?]*[ -/]*[@-~])")
