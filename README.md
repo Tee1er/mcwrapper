@@ -14,6 +14,7 @@ McWrapper serves as a sort of intermediary interface between the minecraft bedro
  - `help`: Shows some additional help on various commands
  - `settings`: Show or modify the server configuration file (`data/server/server.properties`)
  - `update`: Update the bedrock server from a different download URL, preserving files
+ - `server`: Enters a prompt directly connected to the dedicated server, everything you do in the prompt is sent directly to the server. Type `exit` to exit the prompt and go back to the normal McWrapper prompt.
 
 
 ## Source structure
@@ -29,7 +30,7 @@ McWrapper serves as a sort of intermediary interface between the minecraft bedro
 - [x] Basic configuration editor
 - [ ] Whitelist editor
 - [ ] Player list, info, etc.
-- [ ] Raw server cli
+- [x] Raw server cli
 - [ ] Auto backups and versioning with git
 - [ ] Mapping with [Bedrock-Viz](https://github.com/bedrock-viz/bedrock-viz), [PapyrusCS](https://github.com/papyrus-mc/papyruscs) or a [custom LevelDB reader](https://github.com/syndtr/goleveldb)
 - [ ] Server status/info REST API?
