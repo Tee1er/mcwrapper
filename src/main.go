@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -34,11 +35,11 @@ var (
 		WebhookUrl: "",
 	}
 
-	exepathStr, _ = os.Executable()
-	baseDir       = path.Join(path.Base(exepathStr), "../")
-	dataDir       = path.Join(baseDir, "/data/")
-	settingsPath  = path.Join(dataDir, "/settings.json")
-	tmpDir, _     = os.MkdirTemp("", "mcwrapper_tmp")
+	exepathStr, _   = os.Executable()
+	baseDir         = path.Join(path.Base(exepathStr), "../")
+	dataDir         = path.Join(baseDir, "./data")
+	settingsPath, _ = filepath.Abs(path.Join(dataDir, "/settings.json"))
+	tmpDir, _       = os.MkdirTemp("", "mcwrapper_tmp")
 )
 
 func handleSignal(sig os.Signal) {
@@ -174,13 +175,16 @@ func handleCommand(cmdHistory []string, input string) bool {
 }
 
 func main() {
-	os.MkdirAll(dataDir, 0664)
-	os.MkdirAll(dataPath("/server"), 0664)
+	os.MkdirAll(dataDir, 0777)
+	err := os.MkdirAll(dataPath("./server/"), 0777)
+	check(err)
 
 	if _, err := os.Stat(settingsPath); os.IsNotExist(err) {
 		// MarshalIndent for pretty-print
-		defSettingsStr, _ := json.MarshalIndent(defaultSettings, "", "\t")
-		os.WriteFile(settingsPath, []byte(defSettingsStr), 0664)
+		defSettingsStr, err := json.MarshalIndent(defaultSettings, "", "\t")
+		check(err)
+		err = os.WriteFile(settingsPath, []byte(defSettingsStr), 0777)
+		check(err)
 	}
 
 	settings.Load(settingsPath)

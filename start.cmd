@@ -3,7 +3,7 @@
 GOTO :WINDOWSSCRIPT
 ::CMDCODE
 
-eval "$(cat /etc/*-release | awk '$0="export "$0')"
+# eval "$(cat /etc/*-release | awk '$0="export "$0')"
 echo "[96m -- MCWrapper v0.1-alpha CLI $PRETTY_NAME -- [0m"
 go run ./src/*.go
 
