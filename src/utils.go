@@ -70,7 +70,6 @@ func dataPath(p string) string {
 
 func tmpPath(p string) string {
 	resolved := path.Join(tmpDir, p)
-	os.MkdirAll(resolved, 0666)
 	return resolved
 }
 
